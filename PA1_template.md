@@ -1,20 +1,37 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author: Philip Canalese
+revision: 0.2 - 5 June 2015
 output: 
   html_document:
     keep_md: true
 ---
+## Context
 
+The document is Peer Assessment 1 for the Johns Hopkins University Cousera Programme - Reproducible Research.
+
+It uses data downloaded from the course web site:
+
+* Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
+
+For this assessment the data was downloaded from the above website on Jun 3 2015.
+
+The SHA-1 hash for the downloaded zip file was:
+02eb450a51703750115ccb63efada91b2ec49bb0
+
+The following steps was carried on the extract data file "activity.csv"
 
 ## Loading and preprocessing the data
+For the purposes of simplification, it is assumed that persons reproducing this work have the ability to download the file and store it in an appropriate location on their system.
 
-Load the data and convert it to a data table. 
+Load the data and convert it to a seperate data table. The step of saving in the data in a new frame is not required but enables the data to be manipulate with having to re read the data in.  Given the data set is not huge memory should not be an issue.
 
 
 ```r
 library(data.table)
 
-raw_data = read.csv("./activity/activity.csv", header = TRUE, stringsAsFactors = FALSE)
+raw_data = read.table("./activity/activity.csv", header = TRUE, sep=",", 
+                   colClasses=c('integer','Date','integer'))
 
 #convert to data table
 data_dt = as.data.table(raw_data)
@@ -26,9 +43,8 @@ setkey(data_dt, date)
 ## What is mean total number of steps taken per day?
 
 Step 1: Make a histogram of the total number of steps per day
-Note that NA values have been left in.  Values have not been set to zero
-as this would skew the histogram i.e. we have no idea on what the total number
-of steps taken on these days.
+Note that NA values have been left in and no changes have been made to their value, 
+as we have no idea on what the total number of steps taken on these days.
 
 
 ```r
@@ -38,7 +54,10 @@ setnames(data_dt_days,2,"steps")
 
 #Plot histogram with 20 intervals
 hist(data_dt_days$steps,20, 
-     main="Histogram of Total Number of Steps per day", xlab ="Steps",
+     main=paste0("Histogram of Total Number of Steps per day ",data_dt$date[1],
+                 " to ", data_dt$date[17568]), 
+     col="Light Blue",
+     xlab ="Steps",
      xlim = c(0,25000), ylim = c(0,12))
 ```
 
@@ -68,7 +87,7 @@ data_dt_days[,median(steps,na.rm = TRUE),]
 ## [1] 10765
 ```
 
-
+The mean and median number of steps are close and note days where no data has been recorded have not been included.
 
 ## What is the average daily activity pattern?
 
@@ -83,6 +102,7 @@ data_dt_intervals = tapply(data_dt$steps,as.factor(data_dt$interval),mean,na.rm=
 plot(rownames(data_dt_intervals),data_dt_intervals,type='l',
      main=paste0("Average Steps per 5 minute Interval ",data_dt$date[1]," to ",
                  data_dt$date[17568]),
+     col= "Dark Blue",
      xlab="5 minute Interval",
      ylab="Average Steps")
 ```
@@ -94,7 +114,6 @@ Step 2. Which 5-minute interval, on average across all the days in the dataset, 
 
 ```r
 #return which period has the maximum mean value
-
 data_dt_intervals[which(data_dt_intervals==(max(data_dt_intervals)))]
 ```
 
@@ -130,6 +149,9 @@ data_dt[is.na(steps)]
 ## 2304:    NA 2012-11-30     2355
 ```
 
+It is noted that given the total number of 5 minute periods in any one day is (24*60)/5 = 288 periods and from above there are 2304 intervals, the number of days with no data is 2304/288 = 8 days (exactly) and the dates of these are given below:
+
+
 ```r
 # Show days that have NA
 data_dt_days[is.na(steps)]
@@ -147,9 +169,10 @@ data_dt_days[is.na(steps)]
 ## 8: 2012-11-30    NA
 ```
 
+
 Step 2 & 3. Devise a strategy for filling in all of the missing values in the dataset.
 The method used was to replace the NA value with the average value of the 5 minute 
-interval accross all days.
+interval accross all days for the interval in question.
 
 
 ```r
@@ -173,11 +196,14 @@ and report the mean and median total number of steps taken per day.
 
 data_dt_nas_days = data_dt_nas[,lapply(.SD,sum), by = date, .SD="steps"]
 hist(data_dt_nas_days$steps,20, 
-     main="Histogram of Total Number of Steps per day", xlab ="Steps",
+     main=paste0("Histogram of Total Number of Steps per day ",data_dt$date[1],
+                 " to ", data_dt$date[17568]),
+     col="Light Blue",
+     xlab ="Steps",
      xlim = c(0,25000), ylim = c(0,20))
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png) 
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png) 
 
 ```r
 # Calculate mean 
@@ -196,8 +222,9 @@ data_dt_nas_days[,median(steps),]
 ```
 ## [1] 10766.19
 ```
+It is noted that the median and mean values are now equal and that the median value is no longer an integer as the average values inserted in the above process were not rounded in any way.
 
-These values differ from the set that includes "NA" as noted below.
+These values differ from the values calculated above by.
 
 
 ```r
@@ -228,7 +255,7 @@ sum(data_dt_nas_days$steps)-sum(na.omit(data_dt_days$steps))
 ## [1] 86129.51
 ```
 
-It is also noted that the mean and median have the same value
+
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
@@ -262,6 +289,7 @@ g + geom_line(stat="identity") + facet_grid(day_col_week~.) +
         theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
 ```
 
-![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png) 
+![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png) 
 
-From the graphs we can see that the person starts walking later on the weekend and not as far in the morning.
+From the graphs we can see that the person starts walking earlier on a weekday.  Perhaps this indicates a person working to work or transport to work, perhaps they walk a pet on the weekdays but not on the weekend - we can't tell from just this data.
+It also seems that on weekends during the period 10 am to 7:30 pm the average number of steps is around 75 steps per period compared with around 50 steps per period for the same time during the week.
