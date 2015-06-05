@@ -1,11 +1,14 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 author: Philip Canalese
-revision: 0.2 - 5 June 2015
+revision: 0.3 - 5 June 2015
 output: 
   html_document:
     keep_md: true
 ---
+
+
+
 ## Context
 
 The document is Peer Assessment 1 for the Johns Hopkins University Cousera Programme - Reproducible Research.
@@ -24,17 +27,17 @@ The following steps was carried on the extract data file "activity.csv"
 ## Loading and preprocessing the data
 For the purposes of simplification, it is assumed that persons reproducing this work have the ability to download the file and store it in an appropriate location on their system.
 
-Load the data and convert it to a seperate data table. The step of saving in the data in a new frame is not required but enables the data to be manipulate with having to re read the data in.  Given the data set is not huge memory should not be an issue.
+Load the data and convert it to a seperate data table.
 
 
 ```r
 library(data.table)
 
-raw_data = read.table("./activity/activity.csv", header = TRUE, sep=",", 
+data_dt = read.table("./activity/activity.csv", header = TRUE, sep=",", 
                    colClasses=c('integer','Date','integer'))
 
 #convert to data table
-data_dt = as.data.table(raw_data)
+data_dt = as.data.table(data_dt)
 setkey(data_dt, date)
 ```
 
@@ -61,7 +64,7 @@ hist(data_dt_days$steps,20,
      xlim = c(0,25000), ylim = c(0,12))
 ```
 
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png) 
+![plot of chunk plot_initial_histogram](figure/plot_initial_histogram-1.png) 
 
 Step 2: Calculate and report the mean and median total number of steps taken per day
 
@@ -107,7 +110,7 @@ plot(rownames(data_dt_intervals),data_dt_intervals,type='l',
      ylab="Average Steps")
 ```
 
-![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
+![plot of chunk plot_averages](figure/plot_averages-1.png) 
 
 Step 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
@@ -203,7 +206,7 @@ hist(data_dt_nas_days$steps,20,
      xlim = c(0,25000), ylim = c(0,20))
 ```
 
-![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png) 
+![plot of chunk new_histo](figure/new_histo-1.png) 
 
 ```r
 # Calculate mean 
@@ -265,7 +268,7 @@ Step 1. Create a new factor variable in the dataset with two levels -- "weekday"
 ```r
 #Difference between Weekday and weekend
 # Get new column and populate with day names
-data_dt_nas$day_col = weekdays(strptime(data_dt_nas$date, format = "%Y-%m-%d"))
+data_dt_nas$day_col = weekdays(data_dt_nas$date)
 # New factor column and populate with weekend or weekday
 data_dt_nas$day_col_week = factor(ifelse(data_dt_nas$day_col == "Saturday" | 
                                                  data_dt_nas$day_col == "Sunday", "weekend", "weekday"), 
@@ -289,7 +292,7 @@ g + geom_line(stat="identity") + facet_grid(day_col_week~.) +
         theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
 ```
 
-![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png) 
+![plot of chunk day_vs_end](figure/day_vs_end-1.png) 
 
 From the graphs we can see that the person starts walking earlier on a weekday.  Perhaps this indicates a person working to work or transport to work, perhaps they walk a pet on the weekdays but not on the weekend - we can't tell from just this data.
 It also seems that on weekends during the period 10 am to 7:30 pm the average number of steps is around 75 steps per period compared with around 50 steps per period for the same time during the week.
