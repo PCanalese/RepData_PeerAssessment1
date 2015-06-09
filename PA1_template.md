@@ -28,20 +28,7 @@ Load the data and convert it to a seperate data table.
 
 ```r
 library(data.table)
-```
 
-```
-## data.table 1.9.4  For help type: ?data.table
-## *** NB: by=.EACHI is now explicit. See README to restore previous behaviour.
-## 
-## Attaching package: 'data.table'
-## 
-## The following object is masked _by_ '.GlobalEnv':
-## 
-##     .N
-```
-
-```r
 data_dt = read.table("./activity/activity.csv", header = TRUE, sep=",", 
                    colClasses=c('integer','Date','integer'))
 
@@ -187,7 +174,6 @@ data_dt_days[is.na(steps)]
 
 Step 2 & 3. Devise a strategy for filling in all of the missing values in the dataset.
 Upon investigation of the data it was not surprising to find that the daily patterns of walking changed.  This is shown below:
-<<<<<<< HEAD
 
 
 ```r
@@ -223,43 +209,6 @@ From the graphs it is clear that a the steps varies depending on the day of the 
 
 
 ```r
-=======
-
-
-```r
-# Get new column and populate with day names
-data_dt$day_col = weekdays(data_dt$date)
-
-#Get the number of average number of steps per day 
-intervals_dt_day = data_dt[,lapply(.SD,mean,na.rm=T),by=c('day_col','interval'), .SD='steps']
-
-intervals_dt_day$day_col <- as.factor(intervals_dt_day$day_col)
-setattr(intervals_dt_day$day_col,"levels",c("Monday","Tuesday","Wednesday"
-                                        ,"Thursday","Friday","Saturday","Sunday"))
-
-setnames(intervals_dt_day,3,"ave_steps")
-
-library(ggplot2)
-# plot each of the point sources using ggplot
-data_source <- intervals_dt_day
-
-g <- ggplot(data_source, aes(interval,ave_steps)) # Set the data
-
-# plot used as data refers to only the years in question
-g + geom_line(stat="identity") + facet_grid(day_col~.) + 
-        labs(title = "Average Steps by interval per Day of the Week",
-             y = "Average Number of Steps", x="Time Interval") +
-        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
-```
-
-![plot of chunk daily_steps](figure/daily_steps-1.png) 
-
-From the graphs it is clear that a the steps varies depending on the day of the week. Thus if we were to replace the missing data with a simple average this would not be totally correct, so we will replace the missing data with the correct average daily data and correct averege for the interval.
-
-
-
-```r
->>>>>>> a1821aae2dfb409a54fbd6faebbe3b78ac87cf3a
 # Rev 0.4 improved this section by merging the average data into the data table
 # rather then stepping through all the NA - thanks to discussion thread on
 #  Joining two vectors - warning message - OP Jennifer Teed 
@@ -405,26 +354,13 @@ sessionInfo()
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-<<<<<<< HEAD
 ## [1] ggplot2_1.0.1    data.table_1.9.4 knitr_1.10.5    
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] chron_2.3-45     colorspace_1.2-6 digest_0.6.8     evaluate_0.7    
 ##  [5] formatR_1.2      grid_3.1.3       gtable_0.1.2     htmltools_0.2.6 
-##  [9] labeling_0.3     magrittr_1.5     MASS_7.3-39      munsell_0.4.2   
-## [13] plyr_1.8.2       proto_0.3-10     Rcpp_0.11.6      reshape2_1.4.1  
-## [17] rmarkdown_0.6.1  scales_0.2.4     stringi_0.4-1    stringr_1.0.0   
-## [21] tools_3.1.3      yaml_2.1.13
-=======
-## [1] knitr_1.10.5     ggplot2_1.0.1    data.table_1.9.4
-## 
-## loaded via a namespace (and not attached):
-##  [1] chron_2.3-45     colorspace_1.2-6 digest_0.6.8     evaluate_0.7    
-##  [5] formatR_1.2      grid_3.1.3       gtable_0.1.2     highr_0.5       
-##  [9] htmltools_0.2.6  labeling_0.3     magrittr_1.5     markdown_0.7.7  
-## [13] MASS_7.3-39      mime_0.3         munsell_0.4.2    plyr_1.8.2      
-## [17] proto_0.3-10     Rcpp_0.11.6      reshape2_1.4.1   rmarkdown_0.6.1 
-## [21] scales_0.2.4     stringi_0.4-1    stringr_1.0.0    tools_3.1.3     
-## [25] yaml_2.1.13
->>>>>>> a1821aae2dfb409a54fbd6faebbe3b78ac87cf3a
+##  [9] labeling_0.3     magrittr_1.5     markdown_0.7.7   MASS_7.3-39     
+## [13] mime_0.3         munsell_0.4.2    plyr_1.8.2       proto_0.3-10    
+## [17] Rcpp_0.11.6      reshape2_1.4.1   rmarkdown_0.6.1  scales_0.2.4    
+## [21] stringi_0.4-1    stringr_1.0.0    tools_3.1.3      yaml_2.1.13
 ```
