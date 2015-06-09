@@ -219,7 +219,7 @@ data_dt_nas$steps[which(is.na(data_dt_nas$steps))] = data_dt_nas$ave_steps[which
 data_dt_nas$ave_steps=NULL
 ```
 
-Step 4 Make a histogram of the total number of steps taken each day and Calculate
+Step 4 Make a histogram of the total number of steps taken each day and calculate
 and report the mean and median total number of steps taken per day.
 
 
@@ -229,7 +229,7 @@ and report the mean and median total number of steps taken per day.
 
 data_dt_nas_days = data_dt_nas[,lapply(.SD,sum), by = date, .SD="steps"]
 hist(data_dt_nas_days$steps,20, 
-     main=paste0("Histogram of Total Number of Steps per day ",data_dt$date[1],
+     main=paste0("Histogram of Total Number of Steps Per Day ",data_dt$date[1],
                  " to ", data_dt$date[17568]),
      col="Light Blue",
      xlab ="Steps",
