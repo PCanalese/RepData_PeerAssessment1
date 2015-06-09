@@ -1,7 +1,7 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 author: Philip Canalese
-revision: 0.3 - 5 June 2015
+revision: 0.4 - 9 June 2015
 output: 
   html_document:
     keep_md: true
@@ -17,10 +17,6 @@ It uses data downloaded from the course web site:
 
 * Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
 
-For this assessment the data was downloaded from the above website on Jun 3 2015.
-
-The SHA-1 hash for the downloaded zip file was:
-02eb450a51703750115ccb63efada91b2ec49bb0
 
 The following steps was carried on the extract data file "activity.csv"
 
@@ -32,7 +28,20 @@ Load the data and convert it to a seperate data table.
 
 ```r
 library(data.table)
+```
 
+```
+## data.table 1.9.4  For help type: ?data.table
+## *** NB: by=.EACHI is now explicit. See README to restore previous behaviour.
+## 
+## Attaching package: 'data.table'
+## 
+## The following object is masked _by_ '.GlobalEnv':
+## 
+##     .N
+```
+
+```r
 data_dt = read.table("./activity/activity.csv", header = TRUE, sep=",", 
                    colClasses=c('integer','Date','integer'))
 
@@ -99,10 +108,13 @@ Step 1 Make a time series plot of the 5-minute interval and the average number o
 
 ```r
 # calculate the average of 5 minute time slots over all days
-data_dt_intervals = tapply(data_dt$steps,as.factor(data_dt$interval),mean,na.rm=TRUE)
+intervals_dt = data_dt[,lapply(.SD,mean,na.rm=T),by=interval, .SD='steps']
+setkey(intervals_dt, interval)
+setnames(intervals_dt,2,"ave_steps")
+
 
 #plot the data
-plot(rownames(data_dt_intervals),data_dt_intervals,type='l',
+plot(intervals_dt$interval,intervals_dt$ave_steps,type='l',
      main=paste0("Average Steps per 5 minute Interval ",data_dt$date[1]," to ",
                  data_dt$date[17568]),
      col= "Dark Blue",
@@ -117,12 +129,12 @@ Step 2. Which 5-minute interval, on average across all the days in the dataset, 
 
 ```r
 #return which period has the maximum mean value
-data_dt_intervals[which(data_dt_intervals==(max(data_dt_intervals)))]
+intervals_dt[which(intervals_dt$ave_steps==max(intervals_dt$ave_steps))]
 ```
 
 ```
-##      835 
-## 206.1698
+##    interval ave_steps
+## 1:      835  206.1698
 ```
 
 
@@ -174,19 +186,50 @@ data_dt_days[is.na(steps)]
 
 
 Step 2 & 3. Devise a strategy for filling in all of the missing values in the dataset.
-The method used was to replace the NA value with the average value of the 5 minute 
-interval accross all days for the interval in question.
+Upon investigation of the data it was not surprising to find that the daily patterns of walking changed.  This is shown below:
 
 
 ```r
-# replace the NA in data set with average values for 5 minute intervals
+# Get new column and populate with day names
+data_dt$day_col = weekdays(data_dt$date)
+
+#Get the number of average number of steps per day 
+intervals_dt_day = data_dt[,lapply(.SD,mean,na.rm=T),by=c('day_col','interval'), .SD='steps']
+
+intervals_dt_day$day_col <- as.factor(intervals_dt_day$day_col)
+setattr(intervals_dt_day$day_col,"levels",c("Monday","Tuesday","Wednesday"
+                                        ,"Thursday","Friday","Saturday","Sunday"))
+
+setnames(intervals_dt_day,3,"ave_steps")
+
+library(ggplot2)
+# plot each of the point sources using ggplot
+data_source <- intervals_dt_day
+
+g <- ggplot(data_source, aes(interval,ave_steps)) # Set the data
+
+# plot used as data refers to only the years in question
+g + geom_line(stat="identity") + facet_grid(day_col~.) + 
+        labs(title = "Average Steps by interval per Day of the Week",
+             y = "Average Number of Steps", x="Time Interval") +
+        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
+```
+
+![plot of chunk daily_steps](figure/daily_steps-1.png) 
+
+From the graphs it is clear that a the steps varies depending on the day of the week. Thus if we were to replace the missing data with a simple average this would not be totally correct, so we will replace the missing data with the correct average daily data and correct averege for the interval.
+
+
+
+```r
+# Rev 0.4 improved this section by merging the average data into the data table
+# rather then stepping through all the NA - thanks to discussion thread on
+#  Joining two vectors - warning message - OP Jennifer Teed 
 data_dt_nas = data_dt
-for (i in 1:nrow(data_dt_nas)){
-        if (is.na(data_dt_nas$steps[i])) {
-                data_dt_nas$steps[i]=
-                        data_dt_intervals[which(row.names(data_dt_intervals)==data_dt_nas$interval[i])]
-        }
-}
+
+data_dt_nas = merge(data_dt_nas,intervals_dt_day,by =c("day_col","interval"), all.y=TRUE)
+data_dt_nas$steps[which(is.na(data_dt_nas$steps))] = data_dt_nas$ave_steps[which(is.na(data_dt_nas$steps))]
+data_dt_nas$ave_steps=NULL
 ```
 
 Step 4 Make a histogram of the total number of steps taken each day and Calculate
@@ -203,7 +246,7 @@ hist(data_dt_nas_days$steps,20,
                  " to ", data_dt$date[17568]),
      col="Light Blue",
      xlab ="Steps",
-     xlim = c(0,25000), ylim = c(0,20))
+     xlim = c(0,25000), ylim = c(0,12))
 ```
 
 ![plot of chunk new_histo](figure/new_histo-1.png) 
@@ -214,7 +257,7 @@ data_dt_nas_days[,mean(steps),]
 ```
 
 ```
-## [1] 10766.19
+## [1] 10775.51
 ```
 
 ```r
@@ -223,11 +266,10 @@ data_dt_nas_days[,median(steps),]
 ```
 
 ```
-## [1] 10766.19
+## [1] 11015
 ```
-It is noted that the median and mean values are now equal and that the median value is no longer an integer as the average values inserted in the above process were not rounded in any way.
+It is noted that the median and mean are still similar to the original calculations but differ as shown below.
 
-These values differ from the values calculated above by.
 
 
 ```r
@@ -236,7 +278,7 @@ data_dt_days[,mean(steps,na.rm = TRUE),]-data_dt_nas_days[,mean(steps),]
 ```
 
 ```
-## [1] 0
+## [1] -9.325698
 ```
 
 ```r
@@ -244,7 +286,7 @@ data_dt_days[,median(steps,na.rm = TRUE),]-data_dt_nas_days[,median(steps),]
 ```
 
 ```
-## [1] -1.188679
+## [1] -250
 ```
 Total number of steps of the adjusted set has increased as shown below:
 
@@ -255,7 +297,7 @@ sum(data_dt_nas_days$steps)-sum(na.omit(data_dt_days$steps))
 ```
 
 ```
-## [1] 86129.51
+## [1] 86698.38
 ```
 
 
@@ -294,5 +336,44 @@ g + geom_line(stat="identity") + facet_grid(day_col_week~.) +
 
 ![plot of chunk day_vs_end](figure/day_vs_end-1.png) 
 
-From the graphs we can see that the person starts walking earlier on a weekday.  Perhaps this indicates a person working to work or transport to work, perhaps they walk a pet on the weekdays but not on the weekend - we can't tell from just this data.
-It also seems that on weekends during the period 10 am to 7:30 pm the average number of steps is around 75 steps per period compared with around 50 steps per period for the same time during the week.
+From the graphs you might believe that the person starts walking earlier on a weekday, but this is not entirely true as for each day the pattern varies as shown above in the daily step plots. 
+
+This shows that assumptions based on broad trends may over look subtle details that become more apparent on investigation of the data.
+
+## Appendix A - Data for reproducing this research.
+
+For this assessment the data was downloaded from the above website on Jun 3 2015.
+
+The SHA-1 hash for the downloaded zip file was:
+02eb450a51703750115ccb63efada91b2ec49bb0
+
+A summary of the system is given below:
+
+```r
+sessionInfo()
+```
+
+```
+## R version 3.1.3 (2015-03-09)
+## Platform: i386-w64-mingw32/i386 (32-bit)
+## Running under: Windows 7 (build 7601) Service Pack 1
+## 
+## locale:
+## [1] LC_COLLATE=English_Australia.1252  LC_CTYPE=English_Australia.1252   
+## [3] LC_MONETARY=English_Australia.1252 LC_NUMERIC=C                      
+## [5] LC_TIME=English_Australia.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] ggplot2_1.0.1    data.table_1.9.4 knitr_1.10.5    
+## 
+## loaded via a namespace (and not attached):
+##  [1] chron_2.3-45     colorspace_1.2-6 digest_0.6.8     evaluate_0.7    
+##  [5] formatR_1.2      grid_3.1.3       gtable_0.1.2     htmltools_0.2.6 
+##  [9] labeling_0.3     magrittr_1.5     MASS_7.3-39      munsell_0.4.2   
+## [13] plyr_1.8.2       proto_0.3-10     Rcpp_0.11.6      reshape2_1.4.1  
+## [17] rmarkdown_0.6.1  scales_0.2.4     stringi_0.4-1    stringr_1.0.0   
+## [21] tools_3.1.3      yaml_2.1.13
+```
