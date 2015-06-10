@@ -32,12 +32,9 @@ library(data.table)
 data_dt = read.table("./activity/activity.csv", header = TRUE, sep=",", 
                    colClasses=c('integer','Date','integer'))
 
-#convert to data table
 data_dt = as.data.table(data_dt)
 setkey(data_dt, date)
 ```
-
-
 
 ## What is mean total number of steps taken per day?
 
@@ -51,7 +48,6 @@ as we have no idea on what the total number of steps taken on these days.
 data_dt_days = data_dt[,lapply(.SD,sum), by = date, .SD="steps"]
 setnames(data_dt_days,2,"steps")
 
-#Plot histogram with 20 intervals
 hist(data_dt_days$steps,20, 
      main=paste0("Histogram of Total Number of Steps per day ",data_dt$date[1],
                  " to ", data_dt$date[17568]), 
@@ -67,18 +63,14 @@ Step 2: Calculate and report the mean and median total number of steps taken per
 
 
 ```r
-# note NA removed so mean and median are only on days that have data
-
-# Calculate mean 
 data_dt_days[,mean(steps,na.rm = TRUE),]
 ```
 
 ```
-## [1] 10766.19
+## [1] 10766
 ```
 
 ```r
-# Calculate median
 data_dt_days[,median(steps,na.rm = TRUE),]
 ```
 
@@ -99,8 +91,6 @@ intervals_dt = data_dt[,lapply(.SD,mean,na.rm=T),by=interval, .SD='steps']
 setkey(intervals_dt, interval)
 setnames(intervals_dt,2,"ave_steps")
 
-
-#plot the data
 plot(intervals_dt$interval,intervals_dt$ave_steps,type='l',
      main=paste0("Average Steps per 5 minute Interval ",data_dt$date[1]," to ",
                  data_dt$date[17568]),
@@ -115,13 +105,12 @@ Step 2. Which 5-minute interval, on average across all the days in the dataset, 
 
 
 ```r
-#return which period has the maximum mean value
 intervals_dt[which(intervals_dt$ave_steps==max(intervals_dt$ave_steps))]
 ```
 
 ```
 ##    interval ave_steps
-## 1:      835  206.1698
+## 1:      835       206
 ```
 
 
@@ -132,7 +121,6 @@ Step 1. Calculate and report the total number of missing values in the dataset
 
 
 ```r
-# Determine the number of rows that have NA
 data_dt[is.na(steps)]
 ```
 
@@ -155,7 +143,6 @@ It is noted that given the total number of 5 minute periods in any one day is (2
 
 
 ```r
-# Show days that have NA
 data_dt_days[is.na(steps)]
 ```
 
@@ -177,10 +164,8 @@ Upon investigation of the data it was not surprising to find that the daily patt
 
 
 ```r
-# Get new column and populate with day names
 data_dt$day_col = weekdays(data_dt$date)
 
-#Get the number of average number of steps per day 
 intervals_dt_day = data_dt[,lapply(.SD,mean,na.rm=T),by=c('day_col','interval'), .SD='steps']
 
 intervals_dt_day$day_col <- as.factor(intervals_dt_day$day_col)
@@ -190,16 +175,14 @@ setattr(intervals_dt_day$day_col,"levels",c("Monday","Tuesday","Wednesday"
 setnames(intervals_dt_day,3,"ave_steps")
 
 library(ggplot2)
-# plot each of the point sources using ggplot
+
 data_source <- intervals_dt_day
+g <- ggplot(data_source, aes(interval,ave_steps)) 
 
-g <- ggplot(data_source, aes(interval,ave_steps)) # Set the data
-
-# plot used as data refers to only the years in question
 g + geom_line(stat="identity") + facet_grid(day_col~.) + 
-        labs(title = "Average Steps by interval per Day of the Week",
-             y = "Average Number of Steps", x="Time Interval") +
-        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
+        labs(title = "Average Steps by interval per Day of the Week\n",
+             y = "Average Number of Steps\n", x="Time Interval") +
+        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) 
 ```
 
 ![plot of chunk daily_steps](figure/daily_steps-1.png) 
@@ -224,9 +207,6 @@ and report the mean and median total number of steps taken per day.
 
 
 ```r
-# Make a histogram and calculate mean and median
-#Plot histogram with 20 intervals
-
 data_dt_nas_days = data_dt_nas[,lapply(.SD,sum), by = date, .SD="steps"]
 hist(data_dt_nas_days$steps,20, 
      main=paste0("Histogram of Total Number of Steps Per Day ",data_dt$date[1],
@@ -238,55 +218,14 @@ hist(data_dt_nas_days$steps,20,
 
 ![plot of chunk new_histo](figure/new_histo-1.png) 
 
-```r
-# Calculate mean 
-data_dt_nas_days[,mean(steps),]
-```
+The mean with the *NA values replaced* = 10775.514
 
-```
-## [1] 10775.51
-```
+The median with the *NA values replaced* = 11015
 
-```r
-# Calculate median
-data_dt_nas_days[,median(steps),]
-```
-
-```
-## [1] 11015
-```
-It is noted that the median and mean are still similar to the original calculations but differ as shown below.
+It is noted that the median and mean are still similar to the original but the mean is **less** than the original value by 9.326, with the median **less** than the original  value by 250
 
 
-
-```r
-# Delta to original set
-data_dt_days[,mean(steps,na.rm = TRUE),]-data_dt_nas_days[,mean(steps),]
-```
-
-```
-## [1] -9.325698
-```
-
-```r
-data_dt_days[,median(steps,na.rm = TRUE),]-data_dt_nas_days[,median(steps),]
-```
-
-```
-## [1] -250
-```
-Total number of steps of the adjusted set has increased as shown below:
-
-
-```r
-# Calculate the total number of steps diference
-sum(data_dt_nas_days$steps)-sum(na.omit(data_dt_days$steps))
-```
-
-```
-## [1] 86698.38
-```
-
+Total number of steps of the adjusted set has **increased** by 86698.377
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -295,9 +234,6 @@ Step 1. Create a new factor variable in the dataset with two levels -- "weekday"
 
 
 ```r
-#Difference between Weekday and weekend
-# Get new column and populate with day names
-data_dt_nas$day_col = weekdays(data_dt_nas$date)
 # New factor column and populate with weekend or weekday
 data_dt_nas$day_col_week = factor(ifelse(data_dt_nas$day_col == "Saturday" | 
                                                  data_dt_nas$day_col == "Sunday", "weekend", "weekday"), 
@@ -309,16 +245,15 @@ Step 2.Plot the two graphs of weekday and weekend over 5 minute interval.
 
 ```r
 library(ggplot2)
-# plot each of the point sources using ggplot
+
 data_source <- data_dt_nas[,lapply(.SD,mean), by=list(interval,day_col_week), .SDcols = "steps"]
 
-g <- ggplot(data_source, aes(interval,steps)) # Set the data
+g <- ggplot(data_source, aes(interval,steps)) 
 
-# plot used as data refers to only the years in question
 g + geom_line(stat="identity") + facet_grid(day_col_week~.) + 
-        labs(title = "Average Steps by interval",
-             y = "Average Number of Steps", x="Time Interval") +
-        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) # add the elements
+        labs(title = "Average Steps by interval\n",
+             y = "Average Number of Steps\n", x="Time Interval") +
+        theme(axis.text.x = element_text(angle = 90, vjust=0.5)) 
 ```
 
 ![plot of chunk day_vs_end](figure/day_vs_end-1.png) 
@@ -354,13 +289,14 @@ sessionInfo()
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] ggplot2_1.0.1    data.table_1.9.4 knitr_1.10.5    
+## [1] knitr_1.10.5     data.table_1.9.4 ggplot2_1.0.1   
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] chron_2.3-45     colorspace_1.2-6 digest_0.6.8     evaluate_0.7    
-##  [5] formatR_1.2      grid_3.1.3       gtable_0.1.2     htmltools_0.2.6 
-##  [9] labeling_0.3     magrittr_1.5     markdown_0.7.7   MASS_7.3-39     
-## [13] mime_0.3         munsell_0.4.2    plyr_1.8.2       proto_0.3-10    
-## [17] Rcpp_0.11.6      reshape2_1.4.1   rmarkdown_0.6.1  scales_0.2.4    
-## [21] stringi_0.4-1    stringr_1.0.0    tools_3.1.3      yaml_2.1.13
+##  [5] formatR_1.2      grid_3.1.3       gtable_0.1.2     highr_0.5       
+##  [9] htmltools_0.2.6  labeling_0.3     magrittr_1.5     markdown_0.7.7  
+## [13] MASS_7.3-39      mime_0.3         munsell_0.4.2    plyr_1.8.2      
+## [17] proto_0.3-10     Rcpp_0.11.6      reshape2_1.4.1   rmarkdown_0.6.1 
+## [21] scales_0.2.4     stringi_0.4-1    stringr_1.0.0    tools_3.1.3     
+## [25] yaml_2.1.13
 ```
